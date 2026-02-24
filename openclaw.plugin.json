@@ -1,7 +1,7 @@
 {
   "id": "openclaw-model-failover",
   "name": "OpenClaw Model Failover",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Auto-detect rate limits/quota errors and switch sessions to fallback LLMs.",
   "configSchema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -39,6 +39,11 @@
         "type": "boolean",
         "description": "If true, send a short message when a switch happens.",
         "default": true
+      },
+      "forceOverride": {
+        "type": "boolean",
+        "description": "If true, always override the model to the first available in modelOrder. If false (recommended), only override when the currently pinned model is limited.",
+        "default": false
       }
     }
   }

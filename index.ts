@@ -122,15 +122,48 @@ export default function register(api: any) {
 
   api.logger?.info?.(`[model-failover] enabled. order=${modelOrder.join(" -> ")}`);
 
-  // 1) Before model resolve: if top choice is limited, override model.
+  function getPinnedModel(sessionKey?: string): string | undefined {
+    if (!sessionKey) return undefined;
+    try {
+      const sessionsPath = path.join(os.homedir(), ".openclaw/agents/main/sessions/sessions.json");
+      const raw = fs.readFileSync(sessionsPath, "utf-8");
+      const data = JSON.parse(raw);
+      return data?.[sessionKey]?.model;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // 1) Before model resolve:
+  // - default: do NOT override unless the currently pinned model is limited.
+  // - optional: forceOverride=true always picks first available in modelOrder.
   api.on("before_model_resolve", (event: any, ctx: any) => {
     const state = loadState(statePath);
     const chosen = firstAvailableModel(modelOrder, state);
     if (!chosen) return;
 
-    // If session is pinned to something else AND our preferred isn't the same, we override.
-    // This prevents being stuck on a limited provider.
-    return { modelOverride: chosen };
+    const forceOverride = (cfg as any).forceOverride === true;
+    const pinned = getPinnedModel(ctx?.sessionKey);
+
+    if (forceOverride) {
+      return { modelOverride: chosen };
+    }
+
+    if (!pinned) {
+      // no pin info; be conservative and don't override
+      return;
+    }
+
+    const lim = state.limited[pinned];
+    const isLimited = !!lim && lim.nextAvailableAt > nowSec();
+    if (!isLimited) {
+      return;
+    }
+
+    // pinned is limited -> switch to next available
+    if (chosen !== pinned) {
+      return { modelOverride: chosen };
+    }
   });
 
   // 2) When agent ends with rate limit: mark current model limited + patch session pin.
