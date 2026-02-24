@@ -16,6 +16,8 @@ type PluginCfg = {
   stateFile?: string;
   patchSessionPins?: boolean;
   notifyOnSwitch?: boolean;
+  // If true, automatically skip github-copilot/* models unless copilot-proxy is enabled.
+  requireCopilotProxyForCopilotModels?: boolean;
 };
 
 type LimitState = {
@@ -174,6 +176,29 @@ function patchSessionModel(sessionKey: string, model: string, logger: any) {
   }
 }
 
+function loadGatewayConfig(api: any): any {
+  try {
+    return api?.runtime?.config?.loadConfig?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isCopilotProxyEnabled(gatewayCfg: any): boolean {
+  try {
+    const enabled = gatewayCfg?.plugins?.entries?.["copilot-proxy"]?.enabled;
+    return enabled === true;
+  } catch {
+    return false;
+  }
+}
+
+function isModelConfigured(gatewayCfg: any, modelId: string): boolean {
+  if (!gatewayCfg) return true; // best effort
+  const configured = gatewayCfg?.agents?.defaults?.models?.[modelId];
+  return configured !== undefined;
+}
+
 export default function register(api: any) {
   const cfg = (api.pluginConfig ?? {}) as PluginCfg;
   if (cfg.enabled === false) {
@@ -206,7 +231,23 @@ export default function register(api: any) {
   const patchPins = cfg.patchSessionPins !== false;
   const notifyOnSwitch = cfg.notifyOnSwitch !== false;
 
-  api.logger?.info?.(`[model-failover] enabled. order=${modelOrder.join(" -> ")}`);
+  const gatewayCfg = loadGatewayConfig(api);
+  const requireCopilotProxy = cfg.requireCopilotProxyForCopilotModels !== false;
+  const copilotEnabled = !requireCopilotProxy || isCopilotProxyEnabled(gatewayCfg);
+
+  function effectiveOrder(): string[] {
+    // Filter out models that are obviously not usable.
+    return modelOrder.filter((m) => {
+      if (m.startsWith("github-copilot/") && !copilotEnabled) return false;
+      // Only try models that exist in agents.defaults.models when config is available.
+      if (gatewayCfg && !isModelConfigured(gatewayCfg, m)) return false;
+      return true;
+    });
+  }
+
+  api.logger?.info?.(
+    `[model-failover] enabled. copilotProxy=${copilotEnabled ? "on" : "off"}. order=${effectiveOrder().join(" -> ")}`
+  );
 
   function getPinnedModel(sessionKey?: string): string | undefined {
     if (!sessionKey) return undefined;
@@ -225,7 +266,8 @@ export default function register(api: any) {
   // - optional: forceOverride=true always picks first available in modelOrder.
   api.on("before_model_resolve", (event: any, ctx: any) => {
     const state = loadState(statePath);
-    const chosen = firstAvailableModel(modelOrder, state);
+    const order = effectiveOrder();
+    const chosen = firstAvailableModel(order, state);
     if (!chosen) return;
 
     const forceOverride = (cfg as any).forceOverride === true;
@@ -265,21 +307,24 @@ export default function register(api: any) {
     const state = loadState(statePath);
 
     const hitAt = nowSec();
-    // Auth/scope errors shouldn't be retried aggressively.
-    const effectiveCooldownMin = isAuth ? Math.max(cooldownMinutes, 12 * 60) : cooldownMinutes;
-    const nextAvail = hitAt + effectiveCooldownMin * 60;
 
-    const key = (typeof currentModel === "string" && currentModel.length > 0) ? currentModel : modelOrder[0];
+    const order = effectiveOrder();
+    const key = (typeof currentModel === "string" && currentModel.length > 0) ? currentModel : order[0];
 
     // Detect provider-wide exhaustion (generic)
     const provider = key.split("/")[0];
+
+    // Auth/scope errors shouldn't be retried aggressively.
+    const defaultCooldownMin = isAuth ? Math.max(cooldownMinutes, 12 * 60) : cooldownMinutes;
+    const nextAvail = hitAt + calculateCooldown(provider, err, defaultCooldownMin);
+
     // If it looks like a provider prefix (no spaces, has slash), assume provider-wide block for rate limits
     const isProviderWide = isRate && provider.length > 0;
 
     if (isProviderWide) {
         // Block ALL models from this provider
         let blockedCount = 0;
-        for (const m of modelOrder) {
+        for (const m of order) {
             if (m.startsWith(provider + "/")) {
                 state.limited[m] = {
                     lastHitAt: hitAt,
@@ -301,7 +346,7 @@ export default function register(api: any) {
     
     saveState(statePath, state);
 
-    const fallback = firstAvailableModel(modelOrder, state);
+    const fallback = firstAvailableModel(order, state);
 
     if (patchPins && ctx?.sessionKey && fallback) {
       patchSessionModel(ctx.sessionKey, fallback, api.logger);
@@ -320,36 +365,38 @@ export default function register(api: any) {
     if (!isRateLimitLike(content) && !content.includes("API rate limit reached")) return;
 
     const state = loadState(statePath);
-    // Assume first model in order caused it if no context model
-    const currentModel = ctx?.model || ctx?.modelId || modelOrder[0];
-    const hitAt = nowSec();
-    const nextAvail = hitAt + calculateCooldown(provider, err, cooldownMinutes);
-    
-    // Check if provider-wide
-    const provider = currentModel.split("/")[0];
-    const isProviderWide = (provider === "openai-codex" || provider === "anthropic");
+    const order = effectiveOrder();
 
+    // Assume current model from context if available, else first in effective order
+    const currentModel = String(ctx?.model || ctx?.modelId || order[0] || modelOrder[0]);
+    const provider = currentModel.split("/")[0];
+
+    const hitAt = nowSec();
+    const nextAvail = hitAt + calculateCooldown(provider, content, cooldownMinutes);
+
+    // Provider-wide block (generic) for observed rate-limit messages
+    const isProviderWide = provider.length > 0;
     if (isProviderWide) {
-        for (const m of modelOrder) {
-            if (m.startsWith(provider + "/")) {
-                state.limited[m] = {
-                    lastHitAt: hitAt,
-                    nextAvailableAt: nextAvail,
-                    reason: `Provider ${provider} exhausted (msg detect)`
-                };
-            }
-        }
-    } else {
-        state.limited[currentModel] = {
+      for (const m of order) {
+        if (m.startsWith(provider + "/")) {
+          state.limited[m] = {
             lastHitAt: hitAt,
             nextAvailableAt: nextAvail,
-            reason: "outbound rate limit message observed",
-        };
+            reason: `Provider ${provider} exhausted (msg detect)`,
+          };
+        }
+      }
+    } else {
+      state.limited[currentModel] = {
+        lastHitAt: hitAt,
+        nextAvailableAt: nextAvail,
+        reason: "outbound rate limit message observed",
+      };
     }
-    
+
     saveState(statePath, state);
 
-    const fallback = firstAvailableModel(modelOrder, state);
+    const fallback = firstAvailableModel(order, state);
     if (patchPins && ctx?.sessionKey && fallback) {
       patchSessionModel(ctx.sessionKey, fallback, api.logger);
     }
