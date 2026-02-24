@@ -30,9 +30,75 @@ type LimitState = {
   >;
 };
 
-function nowSec() {
-  return Math.floor(Date.now() / 1000);
+function getNextMidnightPT(): number {
+  const now = new Date();
+  // Pacific Time is UTC-8 (PST) or UTC-7 (PDT). 
+  // Simplified: Use UTC-8 for safety (later reset is safer).
+  const utcNow = now.getTime();
+  const ptOffset = -8 * 60 * 60 * 1000;
+  const ptTime = new Date(utcNow + ptOffset);
+  
+  ptTime.setUTCHours(24, 0, 0, 0); // Next midnight
+  return Math.floor((ptTime.getTime() - ptOffset) / 1000);
 }
+
+function getNextMidnightUTC(): number {
+  const now = new Date();
+  now.setUTCHours(24, 0, 0, 0);
+  return Math.floor(now.getTime() / 1000);
+}
+
+function parseWaitTime(err: string): number | undefined {
+  // Common patterns: "Try again in 4m30s", "after 12:00 UTC", "retry after 60 seconds"
+  const s = err.toLowerCase();
+  
+  // "Try again in Xm Ys"
+  const matchIn = s.match(/in\s+(\d+)(m|s|h)/);
+  if (matchIn) {
+    const val = parseInt(matchIn[1], 10);
+    const unit = matchIn[2];
+    if (unit === 's') return val;
+    if (unit === 'm') return val * 60;
+    if (unit === 'h') return val * 3600;
+  }
+  
+  // "Retry after X seconds"
+  const matchAfter = s.match(/after\s+(\d+)\s+sec/);
+  if (matchAfter) return parseInt(matchAfter[1], 10);
+
+  return undefined;
+}
+
+function calculateCooldown(provider: string, err?: string, defaultMinutes = 60): number {
+  if (!err) return defaultMinutes * 60;
+  
+  // 1. Try to parse specific wait time from error
+  const parsed = parseWaitTime(err);
+  if (parsed) return parsed;
+
+  const text = err.toLowerCase();
+  
+  // 2. Google: "quota" usually means daily limit -> wait for reset
+  if (provider.startsWith("google") && text.includes("quota")) {
+      const reset = getNextMidnightPT();
+      const wait = reset - nowSec();
+      return wait > 0 ? wait : defaultMinutes * 60;
+  }
+
+  // 3. Anthropic: "daily" limit -> wait for UTC midnight
+  if (provider.startsWith("anthropic") && text.includes("daily")) {
+      const reset = getNextMidnightUTC();
+      const wait = reset - nowSec();
+      return wait > 0 ? wait : defaultMinutes * 60;
+  }
+
+  // 4. Default rolling window assumptions
+  // OpenAI often rolling -> 1 hour is a safe retry for short bursts
+  if (provider.startsWith("openai")) return 60 * 60; // 1h
+
+  return defaultMinutes * 60;
+}
+
 
 function isRateLimitLike(err?: string): boolean {
   if (!err) return false;
@@ -113,7 +179,22 @@ export default function register(api: any) {
 
   const modelOrder = (cfg.modelOrder && cfg.modelOrder.length > 0)
     ? cfg.modelOrder
-    : ["anthropic/claude-opus-4-6", "openai-codex/gpt-5.2", "google-gemini-cli/gemini-2.5-flash"]; 
+    : [
+      // Tier 1: Flagships
+      "openai-codex/gpt-5.3-codex",
+      "anthropic/claude-opus-4-6",
+      "google-gemini-cli/gemini-3-pro-preview",
+      // Tier 2: Strong/Balanced
+      "anthropic/claude-sonnet-4-6",
+      "openai-codex/gpt-5.2",
+      "google-gemini-cli/gemini-2.5-pro",
+      // Tier 3: Search/Specific
+      "perplexity/sonar-deep-research",
+      "perplexity/sonar-pro",
+      // Tier 4: Fast/Fallback
+      "google-gemini-cli/gemini-2.5-flash",
+      "google-gemini-cli/gemini-3-flash-preview"
+    ]; 
 
   const cooldownMinutes = cfg.cooldownMinutes ?? 300;
   const statePath = expandHome(cfg.stateFile ?? "~/.openclaw/workspace/memory/model-ratelimits.json");
@@ -185,11 +266,34 @@ export default function register(api: any) {
 
     const key = (typeof currentModel === "string" && currentModel.length > 0) ? currentModel : modelOrder[0];
 
-    state.limited[key] = {
-      lastHitAt: hitAt,
-      nextAvailableAt: nextAvail,
-      reason: err?.slice(0, 200),
-    };
+    // Detect provider-wide exhaustion (generic)
+    const provider = key.split("/")[0];
+    // If it looks like a provider prefix (no spaces, has slash), assume provider-wide block for rate limits
+    const isProviderWide = isRate && provider.length > 0;
+
+    if (isProviderWide) {
+        // Block ALL models from this provider
+        let blockedCount = 0;
+        for (const m of modelOrder) {
+            if (m.startsWith(provider + "/")) {
+                state.limited[m] = {
+                    lastHitAt: hitAt,
+                    nextAvailableAt: nextAvail,
+                    reason: `Provider ${provider} exhausted: ${err?.slice(0, 100)}`
+                };
+                blockedCount++;
+            }
+        }
+        api.logger?.warn?.(`[model-failover] Provider '${provider}' exhausted. Blocked ${blockedCount} models.`);
+    } else {
+        // Block just this model (fallback)
+        state.limited[key] = {
+            lastHitAt: hitAt,
+            nextAvailableAt: nextAvail,
+            reason: err?.slice(0, 200),
+        };
+    }
+    
     saveState(statePath, state);
 
     const fallback = firstAvailableModel(modelOrder, state);
@@ -211,13 +315,33 @@ export default function register(api: any) {
     if (!isRateLimitLike(content) && !content.includes("API rate limit reached")) return;
 
     const state = loadState(statePath);
-    // Assume first model in order caused it
+    // Assume first model in order caused it if no context model
+    const currentModel = ctx?.model || ctx?.modelId || modelOrder[0];
     const hitAt = nowSec();
-    state.limited[modelOrder[0]] = {
-      lastHitAt: hitAt,
-      nextAvailableAt: hitAt + cooldownMinutes * 60,
-      reason: "outbound rate limit message observed",
-    };
+    const nextAvail = hitAt + calculateCooldown(provider, err, cooldownMinutes);
+    
+    // Check if provider-wide
+    const provider = currentModel.split("/")[0];
+    const isProviderWide = (provider === "openai-codex" || provider === "anthropic");
+
+    if (isProviderWide) {
+        for (const m of modelOrder) {
+            if (m.startsWith(provider + "/")) {
+                state.limited[m] = {
+                    lastHitAt: hitAt,
+                    nextAvailableAt: nextAvail,
+                    reason: `Provider ${provider} exhausted (msg detect)`
+                };
+            }
+        }
+    } else {
+        state.limited[currentModel] = {
+            lastHitAt: hitAt,
+            nextAvailableAt: nextAvail,
+            reason: "outbound rate limit message observed",
+        };
+    }
+    
     saveState(statePath, state);
 
     const fallback = firstAvailableModel(modelOrder, state);
