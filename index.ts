@@ -30,15 +30,19 @@ type LimitState = {
   >;
 };
 
+function nowSec() {
+  return Math.floor(Date.now() / 1000);
+}
+
 function getNextMidnightPT(): number {
   const now = new Date();
-  // Pacific Time is UTC-8 (PST) or UTC-7 (PDT). 
-  // Simplified: Use UTC-8 for safety (later reset is safer).
+  // Pacific Time is UTC-8 (PST) or UTC-7 (PDT).
+  // Simplified: use UTC-8 for safety (slightly later reset is safer).
   const utcNow = now.getTime();
   const ptOffset = -8 * 60 * 60 * 1000;
   const ptTime = new Date(utcNow + ptOffset);
-  
-  ptTime.setUTCHours(24, 0, 0, 0); // Next midnight
+
+  ptTime.setUTCHours(24, 0, 0, 0); // next midnight in PT (represented in shifted UTC)
   return Math.floor((ptTime.getTime() - ptOffset) / 1000);
 }
 
