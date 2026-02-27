@@ -1,4 +1,4 @@
-# openclaw-model-failover: Build Dashboard
+﻿# openclaw-model-failover: Build Dashboard
 
 > Single source of truth for build health, test coverage, and pipeline state.
 > Updated by agents at the end of every completed task.
@@ -29,11 +29,11 @@
 
 | Issue | Title | Priority | Labels | Status |
 |-------|-------|----------|--------|--------|
-| [#1](https://github.com/homeofe/openclaw-model-failover/issues/1) | Export internal functions and add proper unit tests | HIGH | enhancement, high-priority | Done |
-| [#2](https://github.com/homeofe/openclaw-model-failover/issues/2) | Fix hardcoded PST offset in getNextMidnightPT (ignores daylight saving) | HIGH | bug, high-priority | Done |
-| [#3](https://github.com/homeofe/openclaw-model-failover/issues/3) | Add failover status inspection command | MEDIUM | enhancement, medium-priority | Done |
-| [#4](https://github.com/homeofe/openclaw-model-failover/issues/4) | Add atomic state file writes to prevent corruption | MEDIUM | bug, medium-priority | Done |
-| [#5](https://github.com/homeofe/openclaw-model-failover/issues/5) | Add per-model and per-provider usage metrics | LOW | enhancement, low-priority | Done |
+| [#1](https://github.com/elvatis/openclaw-model-failover/issues/1) | Export internal functions and add proper unit tests | HIGH | enhancement, high-priority | Done |
+| [#2](https://github.com/elvatis/openclaw-model-failover/issues/2) | Fix hardcoded PST offset in getNextMidnightPT (ignores daylight saving) | HIGH | bug, high-priority | Done |
+| [#3](https://github.com/elvatis/openclaw-model-failover/issues/3) | Add failover status inspection command | MEDIUM | enhancement, medium-priority | Done |
+| [#4](https://github.com/elvatis/openclaw-model-failover/issues/4) | Add atomic state file writes to prevent corruption | MEDIUM | bug, medium-priority | Done |
+| [#5](https://github.com/elvatis/openclaw-model-failover/issues/5) | Add per-model and per-provider usage metrics | LOW | enhancement, low-priority | Done |
 
 ---
 

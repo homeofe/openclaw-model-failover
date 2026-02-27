@@ -1,4 +1,4 @@
-# openclaw-model-failover: Next Actions for Incoming Agent
+﻿# openclaw-model-failover: Next Actions for Incoming Agent
 
 > Priority order. Work top-down.
 > Updated: 2026-02-27 (v0.2 roadmap defined)
@@ -20,7 +20,7 @@
 3. Add test cases for: detection, cooldown calculation, firstAvailableModel, provider blocking
 4. Optionally add Vitest as test runner
 
-**GitHub issue:** https://github.com/homeofe/openclaw-model-failover/issues/1
+**GitHub issue:** https://github.com/elvatis/openclaw-model-failover/issues/1
 
 **Definition of done:**
 - [ ] `npm test` exits 0 and tests real code, not mock copies
@@ -43,7 +43,7 @@
 2. Add unit test that verifies correct behavior in both PST and PDT
 3. Update TRUST.md
 
-**GitHub issue:** https://github.com/homeofe/openclaw-model-failover/issues/2
+**GitHub issue:** https://github.com/elvatis/openclaw-model-failover/issues/2
 
 **Definition of done:**
 - [ ] getNextMidnightPT returns correct time regardless of DST
@@ -64,7 +64,7 @@
 2. Optionally hook into OpenClaw command system
 3. Add manual clear functionality
 
-**GitHub issue:** https://github.com/homeofe/openclaw-model-failover/issues/3
+**GitHub issue:** https://github.com/elvatis/openclaw-model-failover/issues/3
 
 ---
 
@@ -76,7 +76,7 @@
 1. Change `saveState` to use write-to-temp-then-rename pattern
 2. Optionally add file locking for concurrent read-modify-write
 
-**GitHub issue:** https://github.com/homeofe/openclaw-model-failover/issues/4
+**GitHub issue:** https://github.com/elvatis/openclaw-model-failover/issues/4
 
 ---
 
@@ -89,7 +89,7 @@
 2. Add aggregate counters to state file
 3. Add config options for metrics
 
-**GitHub issue:** https://github.com/homeofe/openclaw-model-failover/issues/5
+**GitHub issue:** https://github.com/elvatis/openclaw-model-failover/issues/5
 
 ---
 
@@ -120,5 +120,5 @@
 | Package config | `package.json` |
 | Main source | `index.ts` |
 | Tests (mock) | `test-logic.ts` |
-| GitHub repo | https://github.com/homeofe/openclaw-model-failover |
-| GitHub issues | https://github.com/homeofe/openclaw-model-failover/issues |
+| GitHub repo | https://github.com/elvatis/openclaw-model-failover |
+| GitHub issues | https://github.com/elvatis/openclaw-model-failover/issues |

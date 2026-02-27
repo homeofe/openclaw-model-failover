@@ -1,4 +1,4 @@
-# openclaw-model-failover: Current State of the Nation
+﻿# openclaw-model-failover: Current State of the Nation
 
 > Last updated: 2026-02-27 by claude-opus-4-6 (T-008: Per-model usage metrics and cooldown history)
 > Commit: pending
@@ -58,11 +58,11 @@ v0.2.0 production with auto-gateway-restart on failover. 179 vitest unit tests c
 
 | Feature | Status | GitHub Issue | Description |
 |---------|--------|-------------|-------------|
-| ~~Real unit tests~~ | DONE | [#1](https://github.com/homeofe/openclaw-model-failover/issues/1) | 84 vitest tests covering utilities + handlers + DST |
-| ~~DST bug~~ | DONE | [#2](https://github.com/homeofe/openclaw-model-failover/issues/2) | getNextMidnightPT now tries both offsets, verified with DST transition tests |
-| ~~Status inspection~~ | DONE | [#3](https://github.com/homeofe/openclaw-model-failover/issues/3) | status.ts with CLI + programmatic API, 21 tests |
-| ~~Atomic writes~~ | DONE | [#4](https://github.com/homeofe/openclaw-model-failover/issues/4) | atomicWriteFile() utility used by saveState() and patchSessionModel() for crash-safe writes |
-| ~~Usage metrics~~ | DONE | [#5](https://github.com/homeofe/openclaw-model-failover/issues/5) | metrics.ts with JSONL event log, aggregation, CLI, 28 tests |
+| ~~Real unit tests~~ | DONE | [#1](https://github.com/elvatis/openclaw-model-failover/issues/1) | 84 vitest tests covering utilities + handlers + DST |
+| ~~DST bug~~ | DONE | [#2](https://github.com/elvatis/openclaw-model-failover/issues/2) | getNextMidnightPT now tries both offsets, verified with DST transition tests |
+| ~~Status inspection~~ | DONE | [#3](https://github.com/elvatis/openclaw-model-failover/issues/3) | status.ts with CLI + programmatic API, 21 tests |
+| ~~Atomic writes~~ | DONE | [#4](https://github.com/elvatis/openclaw-model-failover/issues/4) | atomicWriteFile() utility used by saveState() and patchSessionModel() for crash-safe writes |
+| ~~Usage metrics~~ | DONE | [#5](https://github.com/elvatis/openclaw-model-failover/issues/5) | metrics.ts with JSONL event log, aggregation, CLI, 28 tests |
 
 <!-- /SECTION: what_is_missing -->
 
