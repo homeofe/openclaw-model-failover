@@ -62,6 +62,74 @@ In your OpenClaw config:
 }
 ```
 
+## Status Inspection
+
+Check which models are currently blocked and when they become available again.
+
+### CLI
+
+```bash
+# Pretty-print current status
+npx tsx status.ts
+
+# Machine-readable JSON output
+npx tsx status.ts --json
+
+# Clear a specific model's rate limit
+npx tsx status.ts clear openai-codex/gpt-5.3-codex
+
+# Clear all rate-limit entries
+npx tsx status.ts clear --all
+```
+
+### Programmatic API
+
+```typescript
+import { getFailoverStatus, clearModel, clearAllModels } from "./status.js";
+
+// Get structured status snapshot
+const status = getFailoverStatus();
+console.log(status.activeModel);    // current effective model
+console.log(status.blockedCount);   // number of blocked models
+
+// Clear a specific model
+clearModel("openai-codex/gpt-5.3-codex");
+
+// Clear all rate limits
+clearAllModels();
+```
+
+### Example output
+
+```
+=== OpenClaw Model Failover Status ===
+
+Active model : anthropic/claude-opus-4-6
+Models       : 9 available, 2 blocked
+State file   : /home/user/.openclaw/workspace/memory/model-ratelimits.json
+
+Blocked models:
+  - openai-codex/gpt-5.3-codex
+    Reason      : Provider openai-codex exhausted: 429 Too Many Requests
+    Available in: 4h 15m (2026-02-27T08:30:00.000Z)
+  - openai-codex/gpt-5.2
+    Reason      : Provider openai-codex exhausted: 429 Too Many Requests
+    Available in: 4h 15m (2026-02-27T08:30:00.000Z)
+
+Model order:
+  [BLOCKED] openai-codex/gpt-5.3-codex
+  [OK     ] anthropic/claude-opus-4-6
+  [OK     ] github-copilot/claude-sonnet-4.6
+  [OK     ] google-gemini-cli/gemini-3-pro-preview
+  [OK     ] anthropic/claude-sonnet-4-6
+  [BLOCKED] openai-codex/gpt-5.2
+  [OK     ] google-gemini-cli/gemini-2.5-pro
+  [OK     ] perplexity/sonar-deep-research
+  [OK     ] perplexity/sonar-pro
+  [OK     ] google-gemini-cli/gemini-2.5-flash
+  [OK     ] google-gemini-cli/gemini-3-flash-preview
+```
+
 ## Notes / Limitations (v0.1)
 
 - This MVP does not re-run the exact failed turn automatically. It is conservative by default: it only overrides the model when the pinned model is marked limited.

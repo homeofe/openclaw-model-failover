@@ -256,6 +256,26 @@ function isModelConfigured(gatewayCfg: any, modelId: string): boolean {
   return configured !== undefined;
 }
 
+export const DEFAULT_MODEL_ORDER = [
+  // Tier 1: Flagships
+  "openai-codex/gpt-5.3-codex",
+  "anthropic/claude-opus-4-6",
+  "github-copilot/claude-sonnet-4.6",
+  "google-gemini-cli/gemini-3-pro-preview",
+  // Tier 2: Strong/Balanced
+  "anthropic/claude-sonnet-4-6",
+  "openai-codex/gpt-5.2",
+  "google-gemini-cli/gemini-2.5-pro",
+  // Tier 3: Search/Specific
+  "perplexity/sonar-deep-research",
+  "perplexity/sonar-pro",
+  // Tier 4: Fast/Fallback
+  "google-gemini-cli/gemini-2.5-flash",
+  "google-gemini-cli/gemini-3-flash-preview",
+];
+
+export const DEFAULT_STATE_FILE = "~/.openclaw/workspace/memory/model-ratelimits.json";
+
 export default function register(api: any) {
   const cfg = (api.pluginConfig ?? {}) as PluginCfg;
   if (cfg.enabled === false) {
@@ -265,29 +285,13 @@ export default function register(api: any) {
 
   const modelOrder = (cfg.modelOrder && cfg.modelOrder.length > 0)
     ? cfg.modelOrder
-    : [
-      // Tier 1: Flagships
-      "openai-codex/gpt-5.3-codex",
-      "anthropic/claude-opus-4-6",
-      "github-copilot/claude-sonnet-4.6",
-      "google-gemini-cli/gemini-3-pro-preview",
-      // Tier 2: Strong/Balanced
-      "anthropic/claude-sonnet-4-6",
-      "openai-codex/gpt-5.2",
-      "google-gemini-cli/gemini-2.5-pro",
-      // Tier 3: Search/Specific
-      "perplexity/sonar-deep-research",
-      "perplexity/sonar-pro",
-      // Tier 4: Fast/Fallback
-      "google-gemini-cli/gemini-2.5-flash",
-      "google-gemini-cli/gemini-3-flash-preview"
-    ]; 
+    : DEFAULT_MODEL_ORDER; 
 
   const cooldownMinutes = cfg.cooldownMinutes ?? 300;
   const unavailableCooldownMinutes = cfg.unavailableCooldownMinutes ?? 15;
   const debugLogging = cfg.debugLogging === true;
   const debugLogSampleRate = Math.max(0, Math.min(1, Number(cfg.debugLogSampleRate ?? 1)));
-  const statePath = expandHome(cfg.stateFile ?? "~/.openclaw/workspace/memory/model-ratelimits.json");
+  const statePath = expandHome(cfg.stateFile ?? DEFAULT_STATE_FILE);
   const patchPins = cfg.patchSessionPins !== false;
   const notifyOnSwitch = cfg.notifyOnSwitch !== false;
 
