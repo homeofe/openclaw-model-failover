@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
+import { recordEvent, type MetricEvent, DEFAULT_METRICS_FILE } from "./metrics.js";
 
 export function expandHome(p: string): string {
   if (!p) return p;
@@ -28,6 +29,10 @@ type PluginCfg = {
   // Delay in milliseconds before issuing the gateway restart (default: 3000).
   // Gives the current turn time to finish before the gateway is restarted.
   restartDelayMs?: number;
+  // If true (default), record failover events to a JSONL metrics log.
+  metricsEnabled?: boolean;
+  // Path to the JSONL metrics log file.
+  metricsFile?: string;
 };
 
 export type LimitState = {
@@ -307,7 +312,18 @@ export default function register(api: any) {
   const requireCopilotProxy = cfg.requireCopilotProxyForCopilotModels !== false;
   const restartOnSwitch = cfg.restartOnSwitch !== false;
   const restartDelayMs = cfg.restartDelayMs ?? 3000;
+  const metricsEnabled = cfg.metricsEnabled !== false;
+  const metricsPath = expandHome(cfg.metricsFile ?? DEFAULT_METRICS_FILE);
   const sessionForcedModel = new Map<string, string>();
+
+  function emitMetric(event: MetricEvent) {
+    if (!metricsEnabled) return;
+    try {
+      recordEvent(metricsPath, event);
+    } catch (e: any) {
+      api.logger?.warn?.(`[model-failover] Failed to write metrics: ${e?.message ?? String(e)}`);
+    }
+  }
 
   let restartPending = false;
   function scheduleGatewayRestart() {
@@ -493,11 +509,38 @@ export default function register(api: any) {
     
     saveState(statePath, state);
 
+    const cooldownSec = nextAvail - hitAt;
+    const errorType: "rate_limit" | "auth_error" | "unavailable" =
+      isAuth ? "auth_error" : (isUnavailable ? "unavailable" : "rate_limit");
+
+    emitMetric({
+      ts: hitAt,
+      type: errorType,
+      model: key,
+      provider,
+      reason: err?.slice(0, 200),
+      cooldownSec,
+      trigger: "agent_end",
+      session: ctx?.sessionKey,
+    });
+
     const fallback = firstAvailableModel(order, state);
 
     if (ctx?.sessionKey && fallback) {
       sessionForcedModel.set(ctx.sessionKey, fallback);
       debugLog(`session=${ctx.sessionKey} queued-failover=${fallback} source=agent_end provider=${provider}`);
+    }
+
+    if (fallback && fallback !== key) {
+      emitMetric({
+        ts: hitAt,
+        type: "failover",
+        model: key,
+        provider,
+        to: fallback,
+        trigger: "agent_end",
+        session: ctx?.sessionKey,
+      });
     }
 
     if (patchPins && ctx?.sessionKey && fallback) {
@@ -555,11 +598,38 @@ export default function register(api: any) {
 
     saveState(statePath, state);
 
+    const cooldownSec = nextAvail - hitAt;
+    const errorType: "rate_limit" | "unavailable" = isUnavailable ? "unavailable" : "rate_limit";
+
+    emitMetric({
+      ts: hitAt,
+      type: errorType,
+      model: currentModel,
+      provider,
+      reason: content.slice(0, 200),
+      cooldownSec,
+      trigger: "message_sent",
+      session: ctx?.sessionKey,
+    });
+
     const fallback = firstAvailableModel(order, state);
     if (ctx?.sessionKey && fallback) {
       sessionForcedModel.set(ctx.sessionKey, fallback);
       debugLog(`session=${ctx.sessionKey} queued-failover=${fallback} source=message_sent provider=${provider}`);
     }
+
+    if (fallback && fallback !== currentModel) {
+      emitMetric({
+        ts: hitAt,
+        type: "failover",
+        model: currentModel,
+        provider,
+        to: fallback,
+        trigger: "message_sent",
+        session: ctx?.sessionKey,
+      });
+    }
+
     if (patchPins && ctx?.sessionKey && fallback) {
       patchSessionModel(ctx.sessionKey, fallback, api.logger);
     }

@@ -23,6 +23,11 @@ vi.mock("node:child_process", () => ({
   spawn: vi.fn(() => ({ unref: vi.fn() })),
 }));
 
+vi.mock("./metrics.js", () => ({
+  recordEvent: vi.fn(),
+  DEFAULT_METRICS_FILE: "~/.openclaw/workspace/memory/model-failover-metrics.jsonl",
+}));
+
 // ---------------------------------------------------------------------------
 // 1. Rate-limit detection
 // ---------------------------------------------------------------------------

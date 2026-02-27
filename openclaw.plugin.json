@@ -1,7 +1,7 @@
 {
   "id": "openclaw-model-failover",
   "name": "OpenClaw Model Failover",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "Auto-detect rate limits/quota errors and switch sessions to fallback LLMs.",
   "configSchema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -86,6 +86,16 @@
         "description": "Milliseconds to wait before issuing the gateway restart (default: 3000). Gives the current turn time to finish.",
         "default": 3000,
         "minimum": 0
+      },
+      "metricsEnabled": {
+        "type": "boolean",
+        "description": "If true (default), record failover events to a JSONL metrics log for capacity planning and model order optimization.",
+        "default": true
+      },
+      "metricsFile": {
+        "type": "string",
+        "description": "Path to the JSONL metrics log file.",
+        "default": "~/.openclaw/workspace/memory/model-failover-metrics.jsonl"
       }
     }
   }
