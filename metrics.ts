@@ -162,6 +162,8 @@ function emptyModelMetrics(): ModelMetrics {
     timesFailedFrom: 0,
     timesFailedTo: 0,
     totalCooldownSec: 0,
+    cooldownCount: 0,
+    avgCooldownSec: 0,
   };
 }
 
@@ -171,6 +173,8 @@ function emptyProviderMetrics(): ProviderMetrics {
     authErrors: 0,
     unavailableErrors: 0,
     totalCooldownSec: 0,
+    cooldownCount: 0,
+    avgCooldownSec: 0,
   };
 }
 
@@ -182,6 +186,8 @@ export function getMetricsSummary(opts?: {
   metricsPath?: string;
   since?: number;
   until?: number;
+  /** Maximum number of recent cooldown entries to include (default 50). */
+  maxRecentCooldowns?: number;
 }): MetricsSummary {
   const metricsPath = opts?.metricsPath ?? DEFAULT_METRICS_FILE;
   const allEvents = loadEvents(metricsPath);
@@ -192,13 +198,18 @@ export function getMetricsSummary(opts?: {
     (e) => e.ts >= sinceFilter && e.ts <= untilFilter,
   );
 
+  const maxRecentCooldowns = opts?.maxRecentCooldowns ?? 50;
+
   const models: Record<string, ModelMetrics> = {};
   const providers: Record<string, ProviderMetrics> = {};
+  const allCooldowns: CooldownEntry[] = [];
 
   let totalRateLimits = 0;
   let totalAuthErrors = 0;
   let totalUnavailable = 0;
   let totalFailovers = 0;
+  let totalCooldownSec = 0;
+  let totalCooldownCount = 0;
   let earliest: number | undefined;
 
   for (const e of events) {
@@ -219,7 +230,19 @@ export function getMetricsSummary(opts?: {
         m.lastHitAt = e.ts;
         if (e.cooldownSec) {
           m.totalCooldownSec += e.cooldownSec;
+          m.cooldownCount++;
           p.totalCooldownSec += e.cooldownSec;
+          p.cooldownCount++;
+          totalCooldownSec += e.cooldownSec;
+          totalCooldownCount++;
+          allCooldowns.push({
+            startedAt: e.ts,
+            durationSec: e.cooldownSec,
+            type: e.type,
+            reason: e.reason,
+            trigger: e.trigger,
+            session: e.session,
+          });
         }
         break;
       case "auth_error":
@@ -229,7 +252,19 @@ export function getMetricsSummary(opts?: {
         m.lastHitAt = e.ts;
         if (e.cooldownSec) {
           m.totalCooldownSec += e.cooldownSec;
+          m.cooldownCount++;
           p.totalCooldownSec += e.cooldownSec;
+          p.cooldownCount++;
+          totalCooldownSec += e.cooldownSec;
+          totalCooldownCount++;
+          allCooldowns.push({
+            startedAt: e.ts,
+            durationSec: e.cooldownSec,
+            type: e.type,
+            reason: e.reason,
+            trigger: e.trigger,
+            session: e.session,
+          });
         }
         break;
       case "unavailable":
@@ -239,7 +274,19 @@ export function getMetricsSummary(opts?: {
         m.lastHitAt = e.ts;
         if (e.cooldownSec) {
           m.totalCooldownSec += e.cooldownSec;
+          m.cooldownCount++;
           p.totalCooldownSec += e.cooldownSec;
+          p.cooldownCount++;
+          totalCooldownSec += e.cooldownSec;
+          totalCooldownCount++;
+          allCooldowns.push({
+            startedAt: e.ts,
+            durationSec: e.cooldownSec,
+            type: e.type,
+            reason: e.reason,
+            trigger: e.trigger,
+            session: e.session,
+          });
         }
         break;
       case "failover":
@@ -253,6 +300,21 @@ export function getMetricsSummary(opts?: {
     }
   }
 
+  // Compute per-model and per-provider average cooldown duration
+  for (const m of Object.values(models)) {
+    if (m.cooldownCount > 0) {
+      m.avgCooldownSec = Math.round(m.totalCooldownSec / m.cooldownCount);
+    }
+  }
+  for (const p of Object.values(providers)) {
+    if (p.cooldownCount > 0) {
+      p.avgCooldownSec = Math.round(p.totalCooldownSec / p.cooldownCount);
+    }
+  }
+
+  // Keep last N cooldown entries for the recent history
+  const recentCooldowns = allCooldowns.slice(-maxRecentCooldowns);
+
   return {
     since: earliest,
     until: events.length > 0 ? events[events.length - 1].ts : nowSec(),
@@ -261,6 +323,10 @@ export function getMetricsSummary(opts?: {
     totalAuthErrors,
     totalUnavailable,
     totalFailovers,
+    avgCooldownSec: totalCooldownCount > 0
+      ? Math.round(totalCooldownSec / totalCooldownCount)
+      : 0,
+    recentCooldowns,
     models,
     providers,
   };
