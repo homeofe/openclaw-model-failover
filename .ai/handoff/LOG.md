@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-02-27 v0.2 Roadmap Definition
+
+**Agent:** claude-opus-4-6
+**Phase:** planning
+**Commit:** fe36602 + roadmap commit (TBD)
+
+### What was done
+
+- Committed uncommitted v0.1.6 changes (auto-gateway-restart feature: restartOnSwitch, restartDelayMs)
+- Created GitHub labels: high-priority, medium-priority, low-priority
+- Created 5 GitHub issues for v0.2 roadmap:
+  - #1: Export internal functions and add proper unit tests (HIGH)
+  - #2: Fix hardcoded PST offset in getNextMidnightPT - DST bug (HIGH)
+  - #3: Add failover status inspection command (MEDIUM)
+  - #4: Add atomic state file writes to prevent corruption (MEDIUM)
+  - #5: Add per-model and per-provider usage metrics (LOW)
+- Updated DASHBOARD.md with v0.2 issue tracker and suggested implementation order
+- Updated STATUS.md to reflect roadmap is now defined
+- Updated NEXT_ACTIONS.md with issue-linked tasks
+- Pushed v0.1.6 commit to origin/main
+
+### Decisions made
+
+- Chose to focus on testability (#1) and correctness (#2) as high-priority over new features
+- DST bug classified as high-priority because it affects 8 months/year
+- Metrics (#5) kept low-priority since it is a nice-to-have, not a correctness issue
+- Recommended doing #1 and #2 together since tests should cover the DST fix
+
+---
+
 ## 2026-02-26 AAHP v3 Migration
 
 **Agent:** claude-sonnet-4.6

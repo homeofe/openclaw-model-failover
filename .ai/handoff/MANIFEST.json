@@ -2,37 +2,37 @@
   "aahp_version": "3.0",
   "project": "openclaw-model-failover",
   "last_session": {
-    "agent": "claude-sonnet-4.6",
-    "session_id": "aahp-migration-2026-02-26",
-    "timestamp": "2026-02-26T23:16:45Z",
-    "commit": "a35b015",
-    "phase": "implementation",
-    "duration_minutes": 0
+    "agent": "claude-opus-4-6",
+    "session_id": "v0.2-roadmap-2026-02-27",
+    "timestamp": "2026-02-27T00:48:00Z",
+    "commit": "fe36602",
+    "phase": "planning",
+    "duration_minutes": 15
   },
   "files": {
     "STATUS.md": {
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "updated": "2026-02-26T23:16:45Z",
-      "lines": 50,
-      "summary": "v0.1.2 production. Copilot-proxy failover, 40+ LLMs. Tests not written. v0.2 roadmap not defined."
+      "updated": "2026-02-27T00:48:00Z",
+      "lines": 70,
+      "summary": "v0.1.6 production. v0.2 roadmap defined as 5 GitHub issues. DST bug and missing tests are high-priority."
     },
     "NEXT_ACTIONS.md": {
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "updated": "2026-02-26T23:16:45Z",
-      "lines": 50,
-      "summary": "2 tasks. T-001 (v0.2 roadmap issues) and T-002 (write tests) both ready."
+      "updated": "2026-02-27T00:48:00Z",
+      "lines": 100,
+      "summary": "5 tasks linked to GitHub issues. T-002 (tests) and T-003 (DST fix) are top priority."
     },
     "LOG.md": {
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "updated": "2026-02-26T23:16:45Z",
-      "lines": 20,
-      "summary": "Last entry: AAHP v3 migration. Previous: initialized AAHP handoff."
+      "updated": "2026-02-27T00:48:00Z",
+      "lines": 55,
+      "summary": "Latest: v0.2 roadmap definition session. 5 issues created, v0.1.6 committed and pushed."
     },
     "DASHBOARD.md": {
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "updated": "2026-02-26T23:16:45Z",
-      "lines": 25,
-      "summary": "T-001 (roadmap) and T-002 (tests) both ready."
+      "updated": "2026-02-27T00:48:00Z",
+      "lines": 55,
+      "summary": "v0.2 roadmap tracker with 5 GitHub issues, suggested implementation order, task table."
     },
     "TRUST.md": {
       "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
@@ -53,27 +53,61 @@
       "summary": "2-agent pipeline: Implementer + Reviewer."
     }
   },
-  "quick_context": "openclaw-model-failover v0.1.2 production. Copilot-proxy cooldown detection and immediate failover working. 40+ LLM failover across Anthropic/OpenAI/Google/GitHub Copilot. Next: define v0.2 roadmap as GitHub issues (T-001), write unit tests (T-002).",
+  "quick_context": "openclaw-model-failover v0.1.6 production. Auto-gateway-restart on failover. v0.2 roadmap defined: 5 GitHub issues (#1-#5) covering tests, DST bug, status CLI, atomic writes, metrics. Next: implement #1 (tests) and #2 (DST fix) together.",
   "token_budget": {
     "manifest_only": 85,
     "manifest_plus_core": 320,
-    "full_read": 900
+    "full_read": 1000
   },
-  "next_task_id": 3,
+  "next_task_id": 7,
   "tasks": {
     "T-001": {
       "title": "Define v0.2 roadmap as GitHub issues",
-      "status": "ready",
+      "status": "done",
       "priority": "medium",
       "depends_on": [],
-      "created": "2026-02-26T23:16:45Z"
+      "created": "2026-02-26T23:16:45Z",
+      "completed": "2026-02-27T00:48:00Z"
     },
     "T-002": {
-      "title": "Write unit tests for failover logic",
+      "title": "Write unit tests for failover logic (issue #1)",
       "status": "ready",
       "priority": "high",
       "depends_on": [],
-      "created": "2026-02-26T23:16:45Z"
+      "created": "2026-02-27T00:48:00Z",
+      "github_issue": 1
+    },
+    "T-003": {
+      "title": "Fix DST bug in getNextMidnightPT (issue #2)",
+      "status": "ready",
+      "priority": "high",
+      "depends_on": [],
+      "created": "2026-02-27T00:48:00Z",
+      "github_issue": 2
+    },
+    "T-004": {
+      "title": "Add failover status inspection (issue #3)",
+      "status": "ready",
+      "priority": "medium",
+      "depends_on": [],
+      "created": "2026-02-27T00:48:00Z",
+      "github_issue": 3
+    },
+    "T-005": {
+      "title": "Atomic state file writes (issue #4)",
+      "status": "ready",
+      "priority": "medium",
+      "depends_on": [],
+      "created": "2026-02-27T00:48:00Z",
+      "github_issue": 4
+    },
+    "T-006": {
+      "title": "Usage metrics and cooldown history (issue #5)",
+      "status": "ready",
+      "priority": "low",
+      "depends_on": ["T-002"],
+      "created": "2026-02-27T00:48:00Z",
+      "github_issue": 5
     }
   }
 }

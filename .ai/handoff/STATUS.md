@@ -1,7 +1,7 @@
 # openclaw-model-failover: Current State of the Nation
 
-> Last updated: 2026-02-26 by claude-sonnet-4.6 (AAHP v3 migration)
-> Commit: a35b015
+> Last updated: 2026-02-27 by claude-opus-4-6 (v0.2 roadmap definition)
+> Commit: fe36602
 >
 > **Rule:** This file is rewritten (not appended) at the end of every session.
 > It reflects the *current* reality, not history. History lives in LOG.md.
@@ -9,7 +9,7 @@
 ---
 
 <!-- SECTION: summary -->
-v0.1.2 production with copilot-proxy cooldown detection + immediate failover. 40+ LLM failover working. v0.2 roadmap not yet started.
+v0.1.6 production with auto-gateway-restart on failover. v0.2 roadmap defined as 5 GitHub issues (#1-#5) covering tests, DST bug fix, status inspection, atomic writes, and metrics.
 <!-- /SECTION: summary -->
 
 <!-- SECTION: build_health -->
@@ -17,10 +17,9 @@ v0.1.2 production with copilot-proxy cooldown detection + immediate failover. 40
 
 | Check | Result | Notes |
 |-------|--------|-------|
-| `npm run build` | (Unknown) | Not re-verified since last session |
-| `npm test` | (Unknown) | Test script added in last commit |
-| `lint` | (Unknown) | Not configured |
-| `type-check` | (Unknown) | Not configured separately |
+| `npm test` | Pass (mock only) | test-logic.ts tests mock copies, not real exports (see #1) |
+| `lint` | N/A | Not configured |
+| `type-check` | N/A | Not configured separately |
 
 <!-- /SECTION: build_health -->
 
@@ -29,35 +28,36 @@ v0.1.2 production with copilot-proxy cooldown detection + immediate failover. 40
 <!-- SECTION: current_state -->
 ## Current State
 
-- **Version:** 0.1.2
-- **CI:** (Unknown) - not recently checked
+- **Version:** 0.1.6
+- **CI:** None configured
 - **Production:** Active as OpenClaw plugin
+- **v0.2 Roadmap:** DEFINED - 5 GitHub issues created
 
-## Key Features (v0.1.2)
+## Key Features (v0.1.6)
 
+- Auto-gateway restart after failover switch (`restartOnSwitch`, `restartDelayMs`)
 - Copilot-proxy cooldown error detection and failover triggering
 - Immediate in-memory session override for instant model switching
 - Temporary unavailability detection (cooldown, 503 service unavailable)
 - `unavailableCooldownMinutes` config (default 15min vs 300min for rate limits)
-- Provider-wide blocking logic corrected (no wrong model blocking)
+- Provider-wide blocking logic
 - Debug logging mode with sample rate
-- `npm test` script + `@types/node` TypeScript support
-- `before_model_resolve` handles unavailable/unconfigured pinned models
-- Supports 40+ LLM failover: Anthropic, OpenAI, Google, GitHub Copilot
+- Supports 40+ LLM failover: Anthropic, OpenAI, Google, GitHub Copilot, Perplexity
 
 <!-- /SECTION: current_state -->
 
 ---
 
 <!-- SECTION: what_is_missing -->
-## What is Missing
+## What is Missing (v0.2 Roadmap)
 
-| Gap | Severity | Description |
-|-----|----------|-------------|
-| v0.2 roadmap | MEDIUM | Issues/tasks not yet defined |
-| Tests | HIGH | Test script added but tests not written |
-| CI pipeline | MEDIUM | No automated CI configured |
-| Staging validation | MEDIUM | Not verified in staging profile |
+| Gap | Severity | GitHub Issue | Description |
+|-----|----------|-------------|-------------|
+| Real unit tests | HIGH | [#1](https://github.com/homeofe/openclaw-model-failover/issues/1) | Tests exist but only cover mock copies, not real exports |
+| DST bug | HIGH | [#2](https://github.com/homeofe/openclaw-model-failover/issues/2) | getNextMidnightPT uses hardcoded PST offset, wrong during PDT |
+| Status inspection | MEDIUM | [#3](https://github.com/homeofe/openclaw-model-failover/issues/3) | No way to view current failover state |
+| Atomic writes | MEDIUM | [#4](https://github.com/homeofe/openclaw-model-failover/issues/4) | State file can corrupt under concurrent access |
+| Usage metrics | LOW | [#5](https://github.com/homeofe/openclaw-model-failover/issues/5) | No historical data for capacity planning |
 
 <!-- /SECTION: what_is_missing -->
 
