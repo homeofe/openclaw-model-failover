@@ -277,6 +277,136 @@ describe("getNextMidnightPT", () => {
 });
 
 // ---------------------------------------------------------------------------
+// 7b. getNextMidnightPT - DST transition edge cases (Issue #2 core fix)
+// ---------------------------------------------------------------------------
+describe("getNextMidnightPT DST transitions", () => {
+  // Helper: format a UTC timestamp in PT and return { hour, day, month }
+  function formatInPT(utcMs: number) {
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(new Date(utcMs));
+    const get = (type: string) =>
+      parts.find((p) => p.type === type)?.value ?? "0";
+    return {
+      year: parseInt(get("year"), 10),
+      month: parseInt(get("month"), 10),
+      day: parseInt(get("day"), 10),
+      hour: parseInt(get("hour"), 10),
+      minute: parseInt(get("minute"), 10),
+    };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("normal PST day: Jan 15, 2025 3 PM PST -> midnight Jan 16 PST", () => {
+    // Jan 15, 2025 3:00 PM PST = Jan 15 23:00 UTC
+    vi.setSystemTime(new Date("2025-01-15T23:00:00Z"));
+    const midnight = getNextMidnightPT();
+    // Jan 16 00:00 PST = Jan 16 08:00 UTC
+    const expected = Math.floor(Date.UTC(2025, 0, 16, 8, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+  });
+
+  it("normal PDT day: Jul 15, 2025 3 PM PDT -> midnight Jul 16 PDT", () => {
+    // Jul 15, 2025 3:00 PM PDT = Jul 15 22:00 UTC
+    vi.setSystemTime(new Date("2025-07-15T22:00:00Z"));
+    const midnight = getNextMidnightPT();
+    // Jul 16 00:00 PDT = Jul 16 07:00 UTC
+    const expected = Math.floor(Date.UTC(2025, 6, 16, 7, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+  });
+
+  it("spring forward: PST day before transition, next midnight is still PST", () => {
+    // March 8, 2025 11:00 PM PST = March 9 07:00 UTC
+    // Spring forward on March 9 at 2:00 AM PST = 10:00 UTC
+    // Next midnight = March 9 00:00 is past, so next = March 9 00:00? No...
+    // Actually at 11 PM March 8, next midnight is March 9 00:00 which is
+    // only 1 hour away and still in PST (before the 2 AM transition).
+    // Wait - 11 PM PST on March 8 means the next midnight is March 9 00:00 PST.
+    // That's March 9 08:00 UTC. The DST change at March 9 10:00 UTC is AFTER that.
+    vi.setSystemTime(new Date("2025-03-09T07:00:00Z"));
+    const midnight = getNextMidnightPT();
+    // Next midnight PT from 11 PM March 8 PST = March 9 00:00 PST = March 9 08:00 UTC
+    const expected = Math.floor(Date.UTC(2025, 2, 9, 8, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+  });
+
+  it("spring forward: 1:30 AM PST on transition day, next midnight is PDT (bug case)", () => {
+    // March 9, 2025 at 1:30 AM PST = March 9 09:30 UTC
+    // Spring forward at 2:00 AM PST (10:00 UTC): clocks jump to 3:00 AM PDT
+    // Next midnight = March 10 00:00 PDT = March 10 07:00 UTC
+    vi.setSystemTime(new Date("2025-03-09T09:30:00Z"));
+    const midnight = getNextMidnightPT();
+    const expected = Math.floor(Date.UTC(2025, 2, 10, 7, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+    // Verify it's actually midnight PT
+    const pt = formatInPT(midnight * 1000);
+    expect(pt.hour === 0 || pt.hour === 24).toBe(true);
+    expect(pt.minute).toBe(0);
+    expect(pt.day).toBe(10);
+    expect(pt.month).toBe(3);
+  });
+
+  it("spring forward: 4 PM PDT after transition, next midnight is PDT", () => {
+    // March 9, 2025 at 4:00 PM PDT = March 9 23:00 UTC
+    vi.setSystemTime(new Date("2025-03-09T23:00:00Z"));
+    const midnight = getNextMidnightPT();
+    // March 10 00:00 PDT = March 10 07:00 UTC
+    const expected = Math.floor(Date.UTC(2025, 2, 10, 7, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+  });
+
+  it("fall back: 12:30 AM PDT on transition day, next midnight is PST (bug case)", () => {
+    // November 2, 2025 at 12:30 AM PDT = November 2 07:30 UTC
+    // Fall back at 2:00 AM PDT (09:00 UTC): clocks go to 1:00 AM PST
+    // Next midnight = November 3 00:00 PST = November 3 08:00 UTC
+    vi.setSystemTime(new Date("2025-11-02T07:30:00Z"));
+    const midnight = getNextMidnightPT();
+    const expected = Math.floor(Date.UTC(2025, 10, 3, 8, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+    // Verify it's actually midnight PT
+    const pt = formatInPT(midnight * 1000);
+    expect(pt.hour === 0 || pt.hour === 24).toBe(true);
+    expect(pt.minute).toBe(0);
+    expect(pt.day).toBe(3);
+    expect(pt.month).toBe(11);
+  });
+
+  it("fall back: 3 AM PST after transition, next midnight is PST", () => {
+    // November 2, 2025 at 3:00 AM PST = November 2 11:00 UTC
+    vi.setSystemTime(new Date("2025-11-02T11:00:00Z"));
+    const midnight = getNextMidnightPT();
+    // November 3 00:00 PST = November 3 08:00 UTC
+    const expected = Math.floor(Date.UTC(2025, 10, 3, 8, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+  });
+
+  it("fall back: 11 PM PDT night before transition, next midnight is PDT", () => {
+    // November 1, 2025 at 11:00 PM PDT = November 2 06:00 UTC
+    // Next midnight = November 2 00:00 PDT = November 2 07:00 UTC
+    // (Midnight Nov 2 is before the 2 AM fall-back, so still PDT)
+    vi.setSystemTime(new Date("2025-11-02T06:00:00Z"));
+    const midnight = getNextMidnightPT();
+    const expected = Math.floor(Date.UTC(2025, 10, 2, 7, 0, 0) / 1000);
+    expect(midnight).toBe(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 8. getNextMidnightUTC
 // ---------------------------------------------------------------------------
 describe("getNextMidnightUTC", () => {

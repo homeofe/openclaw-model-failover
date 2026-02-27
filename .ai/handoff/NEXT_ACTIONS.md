@@ -98,6 +98,8 @@
 | Item | Resolution |
 |------|-----------|
 | T-001: Define v0.2 roadmap | DONE - 5 GitHub issues created (2026-02-27) |
+| T-002: Write unit tests for failover logic | DONE - 73 vitest tests (2026-02-27) |
+| T-003: Fix DST bug in getNextMidnightPT | DONE - tries both offsets, 8 DST tests added (2026-02-27) |
 | Initial scaffold | Done |
 | Copilot-proxy cooldown detection | Done in v0.1.2 (commit a35b015) |
 | Immediate in-memory session override | Done in v0.1.2 |

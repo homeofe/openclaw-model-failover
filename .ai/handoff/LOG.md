@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-02-27 T-003: Fix DST bug in getNextMidnightPT
+
+**Agent:** claude-opus-4-6
+**Phase:** implementing
+**Commit:** pending
+
+### What was done
+
+- Rewrote `getNextMidnightPT()` to try both possible PT offsets (UTC-7 PDT, UTC-8 PST) and verify which one produces midnight when formatted via Intl.DateTimeFormat
+- Old approach: used current offset to derive tomorrow's midnight - wrong when DST transition occurs between now and tomorrow
+- New approach: exhaustive check of both offsets, picking the one that verifies as midnight in PT
+- Added 8 new tests covering all DST edge cases:
+  - Normal PST day, normal PDT day
+  - Spring forward: before transition, on transition day (bug case), after transition
+  - Fall back: night before, on transition day (bug case), after transition
+- Total tests: 81 (up from 73)
+- Updated STATUS.md, TRUST.md, MANIFEST.json
+
+### Decisions made
+
+- Chose "try both offsets" approach over "guess and correct" because it's simpler, more readable, and exhaustive for America/Los_Angeles
+- Hardcoding offsets 7 and 8 is acceptable since the function is specifically for PT
+- Testing with vi.useFakeTimers() + vi.setSystemTime() to simulate exact DST transition moments
+
+---
+
 ## 2026-02-27 v0.2 Roadmap Definition
 
 **Agent:** claude-opus-4-6

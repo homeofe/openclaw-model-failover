@@ -47,8 +47,12 @@ export function nowSec() {
 }
 
 export function getNextMidnightPT(): number {
-  // Use Intl.DateTimeFormat to determine the real UTC offset for America/Los_Angeles,
-  // which correctly handles both PST (UTC-8) and PDT (UTC-7) transitions.
+  // Use Intl.DateTimeFormat to determine the current PT calendar date,
+  // then find the exact UTC timestamp for midnight of the next PT day.
+  // America/Los_Angeles is always UTC-7 (PDT) or UTC-8 (PST).
+  // We try both offsets and verify which one actually lands on midnight
+  // when formatted back in PT - this correctly handles DST transitions
+  // where today's offset differs from tomorrow's.
   const now = new Date();
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Los_Angeles",
@@ -66,32 +70,27 @@ export function getNextMidnightPT(): number {
   const ptYear = parseInt(get("year"), 10);
   const ptMonth = parseInt(get("month"), 10);
   const ptDay = parseInt(get("day"), 10);
-  const ptHour = parseInt(get("hour"), 10);
 
-  // Build a Date representing "today midnight PT" in terms of calendar values,
-  // then derive the actual UTC offset by comparing with the real UTC time.
-  // To find "next midnight PT", advance the PT calendar day by 1.
-  const tomorrowPT = new Date(
-    Date.UTC(ptYear, ptMonth - 1, ptDay + 1, 0, 0, 0, 0)
-  );
+  // Tomorrow's calendar midnight as a naive UTC timestamp (no offset applied).
+  // Date.UTC handles month/year rollover automatically (e.g. day 32 -> next month).
+  const tomorrowNaiveMs = Date.UTC(ptYear, ptMonth - 1, ptDay + 1, 0, 0, 0, 0);
 
-  // Determine current PT offset: diff between UTC time and PT calendar time.
-  // PT calendar time expressed as UTC gives us the offset.
-  const todayPTasUTC = new Date(
-    Date.UTC(
-      ptYear,
-      ptMonth - 1,
-      ptDay,
-      ptHour,
-      parseInt(get("minute"), 10),
-      parseInt(get("second"), 10)
-    )
-  );
-  const offsetMs = now.getTime() - todayPTasUTC.getTime();
+  // Try both possible PT offsets; the correct one produces hour 0 (or 24) in PT.
+  for (const offsetHours of [8, 7]) {
+    const candidate = tomorrowNaiveMs + offsetHours * 3_600_000;
+    const cParts = fmt.formatToParts(new Date(candidate));
+    const cHour = parseInt(
+      cParts.find((p) => p.type === "hour")?.value ?? "99",
+      10
+    );
+    // hour12:false may report midnight as "00" or "24" depending on the engine.
+    if (cHour === 0 || cHour === 24) {
+      return Math.floor(candidate / 1000);
+    }
+  }
 
-  // Next midnight PT in real UTC = tomorrowPT calendar midnight + offset
-  const nextMidnightUTC = tomorrowPT.getTime() + offsetMs;
-  return Math.floor(nextMidnightUTC / 1000);
+  // Unreachable for America/Los_Angeles, but safe fallback using PST (UTC-8).
+  return Math.floor((tomorrowNaiveMs + 8 * 3_600_000) / 1000);
 }
 
 export function getNextMidnightUTC(): number {

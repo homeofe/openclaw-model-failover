@@ -19,7 +19,7 @@
 | Property | Status | Last Verified | TTL | Expires | Agent | Notes |
 |----------|--------|---------------|-----|---------|-------|-------|
 | `npm run build` passes | verified | 2026-02-27 | 7d | 2026-03-06 | claude-opus-4-6 | tsc --noEmit clean |
-| `npm test` passes | verified | 2026-02-27 | 7d | 2026-03-06 | claude-opus-4-6 | 73 tests, all passing |
+| `npm test` passes | verified | 2026-02-27 | 7d | 2026-03-06 | claude-opus-4-6 | 81 tests, all passing |
 | TypeScript compiles | verified | 2026-02-27 | 7d | 2026-03-06 | claude-opus-4-6 | Strict mode, no errors |
 
 ---
@@ -33,6 +33,7 @@
 | Failover cascade across providers | verified | 2026-02-27 | 14d | 2026-03-13 | claude-opus-4-6 | End-to-end cascade test (section 19) |
 | Provider-wide blocking correct | verified | 2026-02-27 | 14d | 2026-03-13 | claude-opus-4-6 | Tested in agent_end + message_sent handlers |
 | Gateway restart scheduling | verified | 2026-02-27 | 14d | 2026-03-13 | claude-opus-4-6 | Tested with fake timers + spawn mock |
+| getNextMidnightPT DST-aware | verified | 2026-02-27 | 14d | 2026-03-13 | claude-opus-4-6 | 8 tests: PST, PDT, spring-forward, fall-back transitions |
 
 ---
 
