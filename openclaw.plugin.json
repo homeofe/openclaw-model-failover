@@ -1,7 +1,7 @@
 {
   "id": "openclaw-model-failover",
   "name": "OpenClaw Model Failover",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Auto-detect rate limits/quota errors and switch sessions to fallback LLMs.",
   "configSchema": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -75,6 +75,17 @@
         "type": "boolean",
         "description": "If true (default), github-copilot/* models are only considered when the stock copilot-proxy plugin is enabled.",
         "default": true
+      },
+      "restartOnSwitch": {
+        "type": "boolean",
+        "description": "If true (default), run `openclaw gateway restart` after a failover so the gateway reloads the patched session model from disk.",
+        "default": true
+      },
+      "restartDelayMs": {
+        "type": "number",
+        "description": "Milliseconds to wait before issuing the gateway restart (default: 3000). Gives the current turn time to finish.",
+        "default": 3000,
+        "minimum": 0
       }
     }
   }

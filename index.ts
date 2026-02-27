@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { spawn } from "node:child_process";
 
 function expandHome(p: string): string {
   if (!p) return p;
@@ -21,6 +22,12 @@ type PluginCfg = {
   notifyOnSwitch?: boolean;
   // If true, automatically skip github-copilot/* models unless copilot-proxy is enabled.
   requireCopilotProxyForCopilotModels?: boolean;
+  // If true (default), run `openclaw gateway restart` after patching the session model so the
+  // gateway picks up the change without waiting for a manual restart.
+  restartOnSwitch?: boolean;
+  // Delay in milliseconds before issuing the gateway restart (default: 3000).
+  // Gives the current turn time to finish before the gateway is restarted.
+  restartDelayMs?: number;
 };
 
 type LimitState = {
@@ -250,7 +257,25 @@ export default function register(api: any) {
   const notifyOnSwitch = cfg.notifyOnSwitch !== false;
 
   const requireCopilotProxy = cfg.requireCopilotProxyForCopilotModels !== false;
+  const restartOnSwitch = cfg.restartOnSwitch !== false;
+  const restartDelayMs = cfg.restartDelayMs ?? 3000;
   const sessionForcedModel = new Map<string, string>();
+
+  let restartPending = false;
+  function scheduleGatewayRestart() {
+    if (!restartOnSwitch || restartPending) return;
+    restartPending = true;
+    setTimeout(() => {
+      restartPending = false;
+      try {
+        const p = spawn("openclaw", ["gateway", "restart"], { detached: true, stdio: "ignore" });
+        p.unref();
+        api.logger?.info?.("[model-failover] Gateway restart issued to apply session model patch.");
+      } catch (e: any) {
+        api.logger?.warn?.(`[model-failover] Gateway restart failed: ${e?.message ?? String(e)}`);
+      }
+    }, restartDelayMs);
+  }
 
   function isCopilotEnabledNow(): boolean {
     const gatewayCfg = loadGatewayConfig(api);
@@ -435,6 +460,8 @@ export default function register(api: any) {
       const why = isAuth ? "auth/scope error" : (isUnavailable ? "temporary unavailability" : "rate limit");
       api.logger?.warn?.(`[model-failover] ${why} detected. Switched future turns to ${fallback} (sessionKey=${ctx.sessionKey}).`);
     }
+
+    scheduleGatewayRestart();
   });
 
   // 3) If we ever send the raw rate-limit error to a channel, immediately patch the session.
@@ -488,5 +515,7 @@ export default function register(api: any) {
     if (patchPins && ctx?.sessionKey && fallback) {
       patchSessionModel(ctx.sessionKey, fallback, api.logger);
     }
+
+    scheduleGatewayRestart();
   });
 }
