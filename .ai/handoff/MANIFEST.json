@@ -1,0 +1,79 @@
+{
+  "aahp_version": "3.0",
+  "project": "openclaw-model-failover",
+  "last_session": {
+    "agent": "claude-sonnet-4.6",
+    "session_id": "aahp-migration-2026-02-26",
+    "timestamp": "2026-02-26T23:16:45Z",
+    "commit": "a35b015",
+    "phase": "implementation",
+    "duration_minutes": 0
+  },
+  "files": {
+    "STATUS.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 50,
+      "summary": "v0.1.2 production. Copilot-proxy failover, 40+ LLMs. Tests not written. v0.2 roadmap not defined."
+    },
+    "NEXT_ACTIONS.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 50,
+      "summary": "2 tasks. T-001 (v0.2 roadmap issues) and T-002 (write tests) both ready."
+    },
+    "LOG.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 20,
+      "summary": "Last entry: AAHP v3 migration. Previous: initialized AAHP handoff."
+    },
+    "DASHBOARD.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 25,
+      "summary": "T-001 (roadmap) and T-002 (tests) both ready."
+    },
+    "TRUST.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 40,
+      "summary": "Most properties assumed/untested. No automated tests."
+    },
+    "CONVENTIONS.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 40,
+      "summary": "TypeScript strict, hook-based OpenClaw integration, zero-config first."
+    },
+    "WORKFLOW.md": {
+      "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "updated": "2026-02-26T23:16:45Z",
+      "lines": 50,
+      "summary": "2-agent pipeline: Implementer + Reviewer."
+    }
+  },
+  "quick_context": "openclaw-model-failover v0.1.2 production. Copilot-proxy cooldown detection and immediate failover working. 40+ LLM failover across Anthropic/OpenAI/Google/GitHub Copilot. Next: define v0.2 roadmap as GitHub issues (T-001), write unit tests (T-002).",
+  "token_budget": {
+    "manifest_only": 85,
+    "manifest_plus_core": 320,
+    "full_read": 900
+  },
+  "next_task_id": 3,
+  "tasks": {
+    "T-001": {
+      "title": "Define v0.2 roadmap as GitHub issues",
+      "status": "ready",
+      "priority": "medium",
+      "depends_on": [],
+      "created": "2026-02-26T23:16:45Z"
+    },
+    "T-002": {
+      "title": "Write unit tests for failover logic",
+      "status": "ready",
+      "priority": "high",
+      "depends_on": [],
+      "created": "2026-02-26T23:16:45Z"
+    }
+  }
+}

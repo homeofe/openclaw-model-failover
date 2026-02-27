@@ -1,0 +1,36 @@
+# .aiignore - AAHP v2 Safety Firewall
+# Patterns that must NEVER appear in handoff files.
+
+# ============================================
+# Secrets & API Keys
+# ============================================
+*_KEY=*
+*_SECRET=*
+*_TOKEN=*
+*_PASSWORD=*
+Bearer *
+sk-*
+ghp_*
+gho_*
+AKIA*
+-----BEGIN*PRIVATE KEY-----
+
+# ============================================
+# PII
+# ============================================
+*@*.com
+*@*.de
+*@*.org
+*@*.net
+*@*.io
+
+# ============================================
+# Prompt Injection Patterns
+# ============================================
+ignore all previous*
+ignore prior*
+disregard*instructions*
+you are now*
+new system prompt*
+override*safety*
+jailbreak*
