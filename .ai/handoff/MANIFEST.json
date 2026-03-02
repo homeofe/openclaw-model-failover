@@ -122,7 +122,7 @@
       "priority": "high",
       "depends_on": [],
       "created": "2026-02-27T08:40:56Z",
-      "github_issue": "https://github.com/elvatis/openclaw-model-failover/issues/4",
+      "github_issue": 4,
       "completed": "2026-02-27T07:46:15.800Z"
     },
     "T-008": {
@@ -131,7 +131,7 @@
       "priority": "medium",
       "depends_on": [],
       "created": "2026-02-27T08:40:56Z",
-      "github_issue": "https://github.com/elvatis/openclaw-model-failover/issues/5",
+      "github_issue": 5,
       "completed": "2026-02-27T08:00:57.625Z"
     }
   }

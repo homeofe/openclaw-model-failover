@@ -5,7 +5,7 @@
 
 ---
 
-## T-002: Write proper unit tests (GitHub issue #1)
+## T-002: Write proper unit tests (GitHub issue #1) (issue #1)
 
 **Goal:** Extract core logic into testable exports and write real unit tests.
 
@@ -29,7 +29,7 @@
 
 ---
 
-## T-003: Fix DST bug in getNextMidnightPT (GitHub issue #2)
+## T-003: Fix DST bug in getNextMidnightPT (GitHub issue #2) (issue #2)
 
 **Goal:** Replace hardcoded -8h PST offset with timezone-aware calculation.
 
@@ -51,7 +51,7 @@
 
 ---
 
-## T-004: Add failover status inspection (GitHub issue #3)
+## T-004: Add failover status inspection (GitHub issue #3) (issue #3)
 
 **Goal:** Give users visibility into current failover state.
 
@@ -68,7 +68,7 @@
 
 ---
 
-## T-005: Atomic state file writes (GitHub issue #4)
+## T-005: Atomic state file writes (GitHub issue #4) (issue #4)
 
 **Goal:** Prevent state file corruption from concurrent access or mid-write crashes.
 
@@ -80,7 +80,7 @@
 
 ---
 
-## T-006: Usage metrics and cooldown history (GitHub issue #5)
+## T-006: Usage metrics and cooldown history (GitHub issue #5) (issue #5)
 
 **Goal:** Track failover events for capacity planning and model order optimization.
 
