@@ -99,7 +99,7 @@
     "T-005": {
       "title": "Atomic state file writes (issue #4)",
       "status": "done",
-      "priority": "medium",
+      "priority": "high",
       "depends_on": [],
       "created": "2026-02-27T00:48:00Z",
       "github_issue": 4,
@@ -108,7 +108,7 @@
     "T-006": {
       "title": "Usage metrics and cooldown history (issue #5)",
       "status": "done",
-      "priority": "low",
+      "priority": "medium",
       "depends_on": [
         "T-002"
       ],
